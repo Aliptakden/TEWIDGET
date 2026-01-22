@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trading Economics + Parts Price Dashboard</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            font-family: Arial, sans-serif;
+            margin: 12px 8px;
+            background: #f9f9f9;
+            color: #222;
+        }
+        h1 {
+            font-size: 1.55em;
+            margin: 0 0 12px 0;
+            text-align: center;
+        }
+        .container {
+            display: flex;
+            gap: 16px;
+            max-width: 100%;
+        }
+        .sidebar {
+            width: 290px;
+            flex-shrink: 0;
+            background: white;
+            padding: 14px 12px;
+            border-radius: 6px;
+            box-shadow: 0 1px 5px rgba(0,0,0,0.08);
+            position: relative;
+        }
+        .main-content {
+            flex: 1;
+        }
+        h3, h4 {
+            margin: 0 0 10px 0;
+            font-size: 1.15em;
+        }
+        select, input[type="text"], input[type="date"], input[type="file"], button {
+            width: 100%;
+            padding: 7px 8px;
+            margin: 5px 0;
+            font-size: 13.5px;
+        }
+        .commodity-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px 12px;
+            font-size: 13px;
+        }
+        .commodity-scroll-wrapper {
+            max-height: 320px;
+            overflow-y: auto;
+            padding-right: 8px;
+            margin-bottom: 12px;
+        }
+        .commodity-grid label {
+            display: block;
+            margin-bottom: 2px;
+        }
+        .date-range {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 8px 0;
+        }
+        .date-range label {
+            flex: 1 1 140px;
+        }
+        .toggle-table {
+            color: #0066cc;
+            cursor: pointer;
+            text-decoration: underline;
+            font-size: 13px;
+        }
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(720px, 1fr));
+            gap: 18px 22px;
+        }
+        .chart-container {
+            background: white;
+            padding: 14px;
+            border-radius: 6px;
+            box-shadow: 0 1px 5px rgba(0,0,0,0.08);
+            margin-bottom: 12px;
+        }
+        .chart-wrapper {
+            position: relative;
+            width: 100%;
+            height: 420px;
+        }
+        .price-box {
+            max-height: 260px;
+            overflow-y: auto;
+            font-size: 13px;
+            margin-top: 8px;
+        }
+        .price-box table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .price-box th, .price-box td {
+            border: 1px solid #ddd;
+            padding: 5px 7px;
+        }
+        .price-box th {
+            background: #f0f0f0;
+        }
+        button.combine-btn {
+            background: #0066cc;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13.5px;
+            margin: 12px 0;
+        }
+        #loading-overlay {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(255,255,255,0.85);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            font-size: 16px;
+            font-weight: bold;
+            color: #0066cc;
+            z-index: 10;
+            border-radius: 6px;
+        }
+        #excel-error-box {
+            background: #fff3e0;
+            color: #ef6c00;
+            padding: 10px;
+            margin-top: 12px;
+            border-radius: 4px;
+            font-size: 13px;
+            display: none;
+            border-left: 4px solid #ff9800;
+        }
+        #excel-error-box.success {
+            background: #e8f5e9;
+            color: #2e7d32;
+            border-left-color: #4caf50;
+        }
+        @media (max-width: 1100px) {
+            .container { flex-direction: column; }
+            .sidebar { width: 100%; }
+            .charts-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <script src="https://embed.tradingeconomics.com/widget.js"></script>
+    <script src="xlsx.full.min.js"></script>
+</head>
+<body>
+
+<h1>Trading Economics + Parts Price Dashboard</h1>
+
+<div class="container">
+
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+        <h3>Commodity / Index Selector</h3>
+        <p style="font-size:13px; margin:6px 0 10px 0;">Select items to display:</p>
+
+        <div class="commodity-scroll-wrapper">
+            <div class="commodity-grid">
+                <!-- Energy -->
+                <div><label>Crude Oil (WTI)</label><input type="checkbox" value="cl1:com" checked></div>
+                <div><label>Brent Crude Oil</label><input type="checkbox" value="co1:com"></div>
+                <div><label>Heating Oil / Diesel</label><input type="checkbox" value="ho1:com"></div>
+                <div><label>Natural Gas</label><input type="checkbox" value="ng1:com" checked></div>
+
+                <!-- Metals -->
+            
+
+                <div><label>Copper</label><input type="checkbox" value="hg1:com" checked></div>
+                <div><label>Gold</label><input type="checkbox" value="xauusd:cur" checked></div>
+                <div><label>Nickel</label><input type="checkbox" value="ln1:com"></div>
+                <div><label>Silver</label><input type="checkbox" value="xagusd:cur" checked></div>
+
+              
+
+                <!-- Lumber / Rubber / Glass -->
+                <div><label>Lumber</label><input type="checkbox" value="lb1:com"></div>
+                <div><label>Rubber</label><input type="checkbox" value="jn1:com"></div>
+
+
+                <!-- Chemicals / Resins -->
+        
+                <div><label>Polyvinyl Chloride (PVC)</label><input type="checkbox" value="pvc:com" checked></div>
+
+                <!-- Stock Market Indices -->
+                <div><label>USA NY Dow (US30)</label><input type="checkbox" value="indu:ind"></div>
+                <div><label>USA NASDAQ 100</label><input type="checkbox" value="us100:ind"></div>
+                <div><label>USA S&P 500</label><input type="checkbox" value="us500:ind"></div>
+                <div><label>Japan Nikkei 225</label><input type="checkbox" value="jp225:ind"></div>
+
+                <!-- Exchange Rates -->
+                <div><label>EUR/USD</label><input type="checkbox" value="eurusd:cur"></div>
+                <div><label>USD/JPY</label><input type="checkbox" value="usdjpy:cur" checked></div>
+                <div><label>USD/CAD</label><input type="checkbox" value="usdcad:cur"></div>
+            </div>
+        </div>
+
+        <button id="reinit-widgets-btn" style="margin: 10px 0; background:#4caf50; color:white; border:none; padding:8px 12px; border-radius:4px; cursor:pointer; font-size:13px; width:100%;">
+            Reinitialize Selected Widgets
+        </button>
+
+        <hr style="margin:16px 0 12px 0;">
+
+        <h3>Vendor Filter (optional)</h3>
+        <select id="vendor-selector">
+            <option value="">-- All Vendors --</option>
+        </select>
+
+        <hr style="margin:16px 0 12px 0;">
+
+        <h3>Parts Unit Price History</h3>
+        <p style="font-size:12px; color:#666; margin-bottom:8px;">
+            Upload Excel file (auto-detects columns like "Part #", "Vendor #", "Rec Date", "Unit $", "EXT $")
+        </p>
+        <input type="file" id="excel-upload" accept=".xlsx,.xls">
+
+        <div id="loading-overlay">Processing Excel file...</div>
+        <div id="excel-error-box"></div>
+
+        <div id="parts-controls" style="display:none; margin-top:10px;">
+            <input type="text" id="part-search" placeholder="Search Part #...">
+            <select id="parts-selector" multiple size="10" style="height:180px; margin:8px 0;"></select>
+
+            <div class="date-range">
+                <label>From: <input type="date" id="date-from"></label>
+                <label>To: <input type="date" id="date-to"></label>
+            </div>
+            <button id="apply-date-filter">Apply Date Range</button>
+
+            <div style="margin:12px 0;">
+                <button id="combine-charts-btn" class="combine-btn">Combine Selected Parts into One Chart</button>
+            </div>
+
+            <div style="margin-top:16px;">
+                <button id="clear-all-btn" style="background:#cc0000; color:white; border:none; padding:8px 12px; border-radius:4px; cursor:pointer; font-size:13.5px; width:auto;">
+                    Clear All Filters & Charts
+                </button>
+            </div>
+
+            <div style="margin-top:8px;">
+                <span id="toggle-table" class="toggle-table">Show/Hide Raw Table</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div class="main-content">
+        <div class="charts-grid" id="commodity-charts-container"></div>
+
+        <div style="height: 50px;"></div>
+
+        <div id="yoy-controls" style="margin-top:16px; display:none;">
+            <h3>Vendor Yearly Spending (YoY)</h3>
+            <div class="chart-container" style="padding:12px;">
+                <h4 id="vendor-yoy-title" style="margin:0 0 10px 0;"></h4>
+                <div class="chart-wrapper" style="height:360px;">
+                    <canvas id="vendorYoYChart"></canvas>
+                </div>
+                <div class="price-box" style="margin-top:12px; max-height:220px;">
+                    <table id="vendor-yoy-table">
+                        <thead><tr><th>Year</th><th>Total EXT $</th><th>YoY % Change</th></tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div id="combined-chart-container" class="chart-container" style="display:none; margin-bottom:24px;">
+            <h3>Combined Price History of Selected Parts</h3>
+            <div class="chart-wrapper" style="height:480px;">
+                <canvas id="combinedPriceChart"></canvas>
+            </div>
+        </div>
+
+        <div class="charts-grid" id="parts-chart-container"></div>
+        <div id="parts-table-container" style="display:none;"></div>
+    </div>
+
+</div>
+
+<script>
+// ────────────────────────────────────────────────
+// COMMODITY CHECKBOXES – create once, hide/show only
+// ────────────────────────────────────────────────
+const commodityItems = {
+    "cl1:com": "Crude Oil (WTI)",
+    "co1:com": "Brent Crude Oil",
+    "rb1:com": "Gasoline",
+    "ho1:com": "Heating Oil / Diesel",
+    "ng1:com": "Natural Gas",
+    "hg1:com": "Copper",
+    "xauusd:cur": "Gold",
+    "hrc:com": "HRC Steel",
+    "pb1:com": "Lead",
+    "lithium": "Lithium",
+    "ln1:com": "Nickel",
+    "xagusd:cur": "Silver",
+    "lb1:com": "Lumber",
+    "jn1:com": "Rubber",
+    "pvc:com": "Polyvinyl Chloride (PVC)",
+    "indu:ind": "USA NY Dow (US30)",
+    "us100:ind": "USA NASDAQ 100",
+    "us500:ind": "USA S&P 500",
+    "jp225:ind": "Japan Nikkei 225",
+    "eurusd:cur": "EUR/USD",
+    "usdjpy:cur": "USD/JPY",
+    "usdcad:cur": "USD/CAD",
+   
+};
+
+const commodityContainer = document.getElementById('commodity-charts-container');
+
+// Create all widgets on load (hidden)
+Object.keys(commodityItems).forEach(symbol => {
+    const name = commodityItems[symbol];
+    const div = document.createElement('div');
+    div.className = 'chart-container';
+    div.id = `widget-${symbol.replace(/[:/]/g, '-')}`; // unique ID
+    div.style.display = 'none'; // hidden by default
+    div.innerHTML = `<h3 style="margin:0 0 8px 0; font-size:1.1em;">${name}</h3>
+                     <div class="te-embed" data-widget="mc-pro" data-symbol="${symbol}"></div>`;
+    commodityContainer.appendChild(div);
+});
+
+function updateCommodityCharts() {
+    const checked = new Set();
+    document.querySelectorAll('.commodity-grid input:checked').forEach(cb => {
+        checked.add(cb.value);
+    });
+
+    // Show checked, hide unchecked
+    Object.keys(commodityItems).forEach(symbol => {
+        const container = document.getElementById(`widget-${symbol.replace(/[:/]/g, '-')}`);
+        if (container) {
+            container.style.display = checked.has(symbol) ? 'block' : 'none';
+        }
+    });
+
+    // Re-init (helps if any were hidden for a long time)
+    setTimeout(() => {
+        if (window.TradingEconomics && window.TradingEconomics.render) {
+            window.TradingEconomics.render();
+        }
+    }, 800);
+}
+
+// Event delegation
+document.querySelector('.commodity-scroll-wrapper').addEventListener('change', e => {
+    if (e.target.matches('input[type="checkbox"]')) {
+        updateCommodityCharts();
+    }
+});
+
+// Reinitialize button
+document.getElementById('reinit-widgets-btn').addEventListener('click', updateCommodityCharts);
+
+// Initial update
+updateCommodityCharts();
+
+// ────────────────────────────────────────────────
+// EXCEL + PARTS + VENDOR CODE (keep your existing logic here)
+// ────────────────────────────────────────────────
+
+// Paste your existing code for rawData, parseAllData, vendor selector, parts, combine, clear, etc.
+// Example placeholder (replace with your full code):
+let rawData = [];
+let partPriceData = {};
+let vendorToPartsMap = {};
+let vendorYearlyCache = {};
+let allPartsList = [];
+
+// ... paste your existing Excel listener, parseAllData, populateVendorSelector, etc. here ...
+// (keep everything below this point the same as your last working version)
+// ────────────────────────────────────────────────
+// DYNAMIC EXCEL IMPORT
+// ────────────────────────────────────────────────
+const excelInput = document.getElementById('excel-upload');
+const loadingOverlay = document.getElementById('loading-overlay');
+const errorBox = document.getElementById('excel-error-box');
+
+excelInput.addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    loadingOverlay.style.display = 'flex';
+    errorBox.style.display = 'none';
+    errorBox.innerHTML = '';
+
+    const reader = new FileReader();
+    reader.onload = ev => {
+        const data = new Uint8Array(ev.target.result);
+        let wb;
+        try {
+            wb = XLSX.read(data, {type:'array'});
+        } catch (err) {
+            errorBox.innerHTML = "Failed to read Excel file: " + err.message;
+            errorBox.style.display = 'block';
+            loadingOverlay.style.display = 'none';
+            return;
+        }
+
+        const keywords = {
+            part: ['part', 'part#', 'part no', 'part number', 'pn'],
+            vendor: ['vendor', 'vendor#', 'vendor no', 'supplier'],
+            date: ['rec date', 'date', 'receiving date', 'rec', 'received'],
+            unit: ['unit', 'unit $', 'unit price', 'price', 'unit cost', 'cost'],
+            ext: ['ext', 'ext $', 'extended', 'total', 'ext cost', 'extended cost']
+        };
+
+        let combinedRows = [];
+        let usedSheets = [];
+
+        for (const sheetName in wb.Sheets) {
+            const ws = wb.Sheets[sheetName];
+            const headers = XLSX.utils.sheet_to_json(ws, {header:1})[0] || [];
+            const lowerHeaders = headers.map(h => String(h || '').trim().toLowerCase().replace(/_/g, ''));
+
+            const headerMap = {};
+            lowerHeaders.forEach((h, idx) => {
+                if (keywords.part.some(k => h.includes(k))) headerMap.part = idx;
+                if (keywords.vendor.some(k => h.includes(k))) headerMap.vendor = idx;
+                if (keywords.date.some(k => h.includes(k))) headerMap.date = idx;
+                if (keywords.unit.some(k => h.includes(k))) headerMap.unit = idx;
+                if (keywords.ext.some(k => h.includes(k))) headerMap.ext = idx;
+            });
+
+            const matchCount = Object.keys(headerMap).length;
+            if (matchCount >= 3) {
+                const rawRows = XLSX.utils.sheet_to_json(ws, {defval:''}).slice(1);
+                const normalized = rawRows.map(row => {
+                    const values = Object.values(row);
+                    return {
+                        'Part #': values[headerMap.part] || '',
+                        'Vendor #': values[headerMap.vendor] || '',
+                        'Rec Date': values[headerMap.date] || '',
+                        'Unit $': values[headerMap.unit] || '',
+                        'EXT $': values[headerMap.ext] || '',
+                        ...row
+                    };
+                }).filter(row => row['Part #'] || row['Vendor #']);
+
+                if (normalized.length > 0) {
+                    combinedRows = combinedRows.concat(normalized);
+                    usedSheets.push(`${sheetName} (${matchCount}/5 columns, ${normalized.length} rows)`);
+                }
+            }
+        }
+
+        loadingOverlay.style.display = 'none';
+
+        if (combinedRows.length === 0) {
+            errorBox.innerHTML = "No sheet had at least 3 required columns (Part #, Vendor #, Rec Date, Unit $, EXT $).";
+            errorBox.style.display = 'block';
+            return;
+        }
+
+        rawData = combinedRows;
+
+        let info = `Loaded ${combinedRows.length} rows from ${usedSheets.length} sheet(s):<br>`;
+        usedSheets.forEach(s => info += `• ${s}<br>`);
+        errorBox.innerHTML = info;
+        errorBox.className = 'success';
+        errorBox.style.display = 'block';
+
+        parseAllData();
+        populateVendorSelector();
+        populatePartsSelector("");
+        document.getElementById('parts-controls').style.display = 'block';
+    };
+    reader.readAsArrayBuffer(file);
+});
+
+function showError(message) {
+    errorBox.innerHTML = message;
+    errorBox.className = '';
+    errorBox.style.display = 'block';
+}
+
+function showSuccess(message) {
+    errorBox.innerHTML = message;
+    errorBox.className = 'success';
+    errorBox.style.display = 'block';
+}
+
+// ────────────────────────────────────────────────
+// parseAllData
+// ────────────────────────────────────────────────
+function parseAllData() {
+    partPriceData = {};
+    vendorToPartsMap = {};
+    vendorYearlyCache = {};
+    const partSet = new Set();
+
+    rawData.forEach(row => {
+        const part   = String(row['Part #']   || '').trim();
+        const vendor = String(row['Vendor #'] || '').trim();
+        if (!part) return;
+
+        partSet.add(part);
+
+        if (vendor) {
+            if (!vendorToPartsMap[vendor]) vendorToPartsMap[vendor] = new Set();
+            vendorToPartsMap[vendor].add(part);
+
+            const year = row['Year'];
+            const ext  = parseFloat(row['EXT $'] || 0);
+            if (year && !isNaN(year) && !isNaN(ext)) {
+                if (!vendorYearlyCache[vendor]) vendorYearlyCache[vendor] = {};
+                vendorYearlyCache[vendor][year] = (vendorYearlyCache[vendor][year] || 0) + ext;
+            }
+        }
+
+        let dateVal = row['Rec Date'];
+        if (!dateVal) return;
+
+        let dateStr;
+        if (typeof dateVal === 'number') {
+            const days = dateVal - 25569;
+            dateStr = new Date(days * 86400 * 1000).toISOString().slice(0,10);
+        } else {
+            dateStr = new Date(dateVal).toISOString().slice(0,10);
+            if (isNaN(new Date(dateStr))) return;
+        }
+
+        const price = parseFloat(row['Unit $']);
+        if (isNaN(price)) return;
+
+        if (!partPriceData[part]) partPriceData[part] = [];
+        partPriceData[part].push({date: dateStr, price});
+    });
+
+    Object.values(partPriceData).forEach(arr => arr.sort((a,b)=>a.date.localeCompare(b.date)));
+    allPartsList = [...partSet].sort();
+}
+
+// ────────────────────────────────────────────────
+// VENDOR SELECTOR + YoY DISPLAY
+// ────────────────────────────────────────────────
+function populateVendorSelector() {
+    const sel = document.getElementById('vendor-selector');
+    sel.innerHTML = '<option value="">-- All Vendors --</option>';
+    Object.keys(vendorToPartsMap).sort().forEach(v => {
+        const opt = document.createElement('option');
+        opt.value = v;
+        opt.textContent = v;
+        sel.appendChild(opt);
+    });
+}
+
+let vendorYoYChartInstance = null;
+
+function renderVendorYoY(vendor) {
+    const titleEl = document.getElementById('vendor-yoy-title');
+    const tbody = document.querySelector('#vendor-yoy-table tbody');
+
+    if (!vendor || !vendorYearlyCache[vendor]) {
+        titleEl.textContent = 'No data';
+        tbody.innerHTML = '<tr><td colspan="3">No yearly data for this vendor</td></tr>';
+        if (vendorYoYChartInstance) vendorYoYChartInstance.destroy();
+        return;
+    }
+
+    const yearly = vendorYearlyCache[vendor];
+    const years = Object.keys(yearly).sort();
+    const totals = years.map(y => yearly[y]);
+    const yoy = years.map((y, i) => {
+        if (i === 0) return null;
+        const prev = yearly[years[i-1]];
+        return prev > 0 ? ((yearly[y] - prev) / prev * 100) : null;
+    });
+
+    titleEl.textContent = `Yearly Spending — ${vendor}`;
+
+    tbody.innerHTML = years.map((y, i) => `
+        <tr>
+            <td>${y}</td>
+            <td>$${totals[i].toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2})}</td>
+            <td>${yoy[i] !== null ? yoy[i].toFixed(2)+' %' : '—'}</td>
+        </tr>
+    `).join('');
+
+    if (vendorYoYChartInstance) vendorYoYChartInstance.destroy();
+
+    const ctx = document.getElementById('vendorYoYChart').getContext('2d');
+    vendorYoYChartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: years,
+            datasets: [
+                { label: 'Total EXT $', data: totals, backgroundColor: 'rgba(54,162,235,0.6)', yAxisID: 'y' },
+                { label: 'YoY % Change', data: yoy, type: 'line', borderColor: 'rgba(255,99,132,1)', pointRadius: 5, yAxisID: 'y1' }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y:  { position: 'left',  title: {display:true, text:'Total $'} },
+                y1: { position: 'right', title: {display:true, text:'YoY %'}, grid: {drawOnChartArea:false} }
+            },
+            plugins: { legend: {position:'top'} }
+        }
+    });
+}
+
+// ────────────────────────────────────────────────
+// PARTS SELECTOR + FILTER BY VENDOR
+// ────────────────────────────────────────────────
+function populatePartsSelector(vendor = '') {
+    const sel = document.getElementById('parts-selector');
+    sel.innerHTML = '';
+
+    let list = vendor && vendorToPartsMap[vendor] ? [...vendorToPartsMap[vendor]] : [...allPartsList];
+    list.sort();
+
+    list.forEach(p => {
+        const opt = document.createElement('option');
+        opt.value = p;
+        opt.textContent = p;
+        sel.appendChild(opt);
+    });
+
+    const q = document.getElementById('part-search').value.toLowerCase();
+    if (q) {
+        Array.from(sel.options).forEach(opt => {
+            opt.style.display = opt.textContent.toLowerCase().includes(q) ? '' : 'none';
+        });
+    }
+
+    renderPartsContent();
+}
+
+// ────────────────────────────────────────────────
+// EVENT LISTENERS
+// ────────────────────────────────────────────────
+document.getElementById('vendor-selector').addEventListener('change', e => {
+    const v = e.target.value;
+    populatePartsSelector(v);
+
+    const yoyDiv = document.getElementById('yoy-controls');
+    if (v) {
+        yoyDiv.style.display = 'block';
+        renderVendorYoY(v);
+    } else {
+        yoyDiv.style.display = 'none';
+    }
+});
+
+document.getElementById('part-search').addEventListener('input', e => {
+    const q = e.target.value.toLowerCase();
+    Array.from(document.getElementById('parts-selector').options).forEach(opt => {
+        opt.style.display = opt.textContent.toLowerCase().includes(q) ? '' : 'none';
+    });
+});
+
+// ────────────────────────────────────────────────
+// PARTS INDIVIDUAL CHARTS
+// ────────────────────────────────────────────────
+const partsSelector = document.getElementById('parts-selector');
+const dateFrom = document.getElementById('date-from');
+const dateTo = document.getElementById('date-to');
+const applyBtn = document.getElementById('apply-date-filter');
+const chartContainer = document.getElementById('parts-chart-container');
+const tableContainer = document.getElementById('parts-table-container');
+const toggleTable = document.getElementById('toggle-table');
+
+let partCharts = {};
+
+function renderPartsContent() {
+    chartContainer.innerHTML = '';
+    tableContainer.innerHTML = '';
+
+    const selected = Array.from(partsSelector.selectedOptions).map(o => o.value);
+    const from = dateFrom.value ? new Date(dateFrom.value) : null;
+    const to   = dateTo.value   ? new Date(dateTo.value)   : null;
+
+    selected.forEach(part => {
+        let data = (partPriceData[part] || []).filter(d => {
+            const dt = new Date(d.date);
+            return (!from || dt >= from) && (!to || dt <= to);
+        });
+
+        if (data.length === 0) return;
+
+        const labels = data.map(d => new Date(d.date));
+        const prices = data.map(d => d.price);
+        const minP = Math.min(...prices);
+        const maxP = Math.max(...prices);
+        const pad = (maxP - minP) * 0.1 || 0.5;
+
+        const canvas = document.createElement('canvas');
+        const wrapper = document.createElement('div');
+        wrapper.className = 'chart-wrapper';
+        wrapper.appendChild(canvas);
+
+        const div = document.createElement('div');
+        div.className = 'chart-container';
+        div.innerHTML = `<h3 style="margin:0 0 8px 0;">${part} (${data.length} pts)</h3>`;
+        div.appendChild(wrapper);
+        chartContainer.appendChild(div);
+
+        if (partCharts[part]) partCharts[part].destroy();
+
+        partCharts[part] = new Chart(canvas, {
+            type: 'line',
+            data: { labels, datasets: [{ label: 'Unit $', data: prices, borderColor: 'rgb(54,162,235)', backgroundColor: 'rgba(54,162,235,0.08)', fill: true, tension: 0.15, pointRadius: 3.5 }] },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: { type: 'time', time: {unit:'month', displayFormats:{month:'MMM yy'}}, title:{display:true,text:'Date'} },
+                    y: { title: {display:true, text:'Price ($)'}, suggestedMin: minP - pad, suggestedMax: maxP + pad, ticks: {callback: v => '$'+v.toFixed(2)} }
+                },
+                plugins: { tooltip: {callbacks: {label: ctx => '$'+ctx.parsed.y.toFixed(4)}}, legend: {display:true, position:'top'} }
+            }
+        });
+    });
+
+    if (tableContainer.style.display !== 'none') renderRawTables(selected, from, to);
+}
+
+function renderRawTables(selected, from, to) {
+    selected.forEach(part => {
+        let data = (partPriceData[part] || []).filter(d => {
+            const dt = new Date(d.date);
+            return (!from || dt >= from) && (!to || dt <= to);
+        });
+
+        const rows = data.map(d => `<tr><td>${d.date}</td><td>$${d.price.toFixed(4)}</td></tr>`).join('');
+
+        const div = document.createElement('div');
+        div.className = 'chart-container';
+        div.innerHTML = `
+            <h3 style="margin:0 0 8px 0;">Raw: ${part} (${data.length})</h3>
+            <div class="price-box"><table><thead><tr><th>Date</th><th>Price</th></tr></thead><tbody>${rows}</tbody></table></div>
+        `;
+        tableContainer.appendChild(div);
+    });
+}
+
+partsSelector.addEventListener('change', renderPartsContent);
+applyBtn.addEventListener('click', renderPartsContent);
+toggleTable.addEventListener('click', () => {
+    const hidden = tableContainer.style.display === 'none';
+    tableContainer.style.display = hidden ? 'block' : 'none';
+    if (hidden) renderPartsContent();
+    else tableContainer.innerHTML = '';
+});
+
+// ────────────────────────────────────────────────
+// COMBINE SELECTED PARTS
+// ────────────────────────────────────────────────
+let combinedChart = null;
+
+document.getElementById('combine-charts-btn').addEventListener('click', () => {
+    const selected = Array.from(partsSelector.selectedOptions).map(o => o.value);
+    if (selected.length === 0) {
+        alert("Please select at least one part.");
+        return;
+    }
+
+    const from = dateFrom.value ? new Date(dateFrom.value) : null;
+    const to   = dateTo.value   ? new Date(dateTo.value)   : null;
+
+    const datasets = [];
+    const allDates = new Set();
+
+    selected.forEach((part, idx) => {
+        let data = (partPriceData[part] || []).filter(d => {
+            const dt = new Date(d.date);
+            return (!from || dt >= from) && (!to || dt <= to);
+        });
+
+        if (data.length === 0) return;
+
+        data.forEach(d => allDates.add(d.date));
+
+        const hue = (idx * 137) % 360;
+        const color = `hsl(${hue}, 70%, 50%)`;
+
+        datasets.push({
+            label: part,
+            data: data.map(d => ({x: new Date(d.date), y: d.price})),
+            borderColor: color,
+            backgroundColor: color + '22',
+            fill: false,
+            tension: 0.15,
+            pointRadius: 3.5,
+            borderWidth: 2
+        });
+    });
+
+    if (datasets.length === 0) {
+        alert("No data in selected range.");
+        return;
+    }
+
+    const sortedDates = [...allDates].sort();
+
+    const cont = document.getElementById('combined-chart-container');
+    cont.style.display = 'block';
+
+    if (combinedChart) combinedChart.destroy();
+
+    const ctx = document.getElementById('combinedPriceChart').getContext('2d');
+    combinedChart = new Chart(ctx, {
+        type: 'line',
+        data: { labels: sortedDates.map(d => new Date(d)), datasets },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            scales: {
+                x: { type: 'time', time: {unit:'month', displayFormats:{month:'MMM yy'}}, title:{display:true,text:'Date'} },
+                y: { title: {display:true, text:'Unit Price ($)'}, ticks: {callback: v => '$'+v.toFixed(2)} }
+            },
+            plugins: {
+                legend: { position: 'top', labels: { boxWidth: 20, padding: 16, usePointStyle: true } },
+                tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: $${ctx.parsed.y.toFixed(4)}` } }
+            }
+        }
+    });
+
+    cont.scrollIntoView({behavior:'smooth', block:'start'});
+});
+
+// ────────────────────────────────────────────────
+// CLEAR ALL BUTTON
+// ────────────────────────────────────────────────
+document.getElementById('clear-all-btn').addEventListener('click', () => {
+    document.querySelectorAll('.commodity-grid input[type="checkbox"]').forEach(cb => {
+        cb.checked = false;
+    });
+    debouncedRender();
+
+    document.getElementById('vendor-selector').value = "";
+    document.getElementById('yoy-controls').style.display = 'none';
+    if (vendorYoYChartInstance) {
+        vendorYoYChartInstance.destroy();
+        vendorYoYChartInstance = null;
+    }
+
+    document.getElementById('part-search').value = "";
+    Array.from(partsSelector.options).forEach(opt => {
+        opt.selected = false;
+        opt.style.display = '';
+    });
+
+    document.getElementById('date-from').value = "";
+    document.getElementById('date-to').value = "";
+
+    document.getElementById('combined-chart-container').style.display = 'none';
+    if (combinedChart) {
+        combinedChart.destroy();
+        combinedChart = null;
+    }
+
+    tableContainer.style.display = 'none';
+    tableContainer.innerHTML = '';
+
+    renderPartsContent();
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+});
+
+</script>
+
+</body>
+</html>
