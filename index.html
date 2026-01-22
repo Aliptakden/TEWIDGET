@@ -112,6 +112,7 @@
             font-size: 13.5px;
             margin: 12px 0;
         }
+
         @media (max-width: 1100px) {
             .container { flex-direction: column; }
             .sidebar { width: 100%; }
@@ -120,6 +121,8 @@
     </style>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <!-- Self-hosted SheetJS (must be uploaded to repo root as xlsx.full.min.js) -->
+    <script src="/TEWIDGET/xlsx.full.min.js"></script>
 </head>
 <body>
 
@@ -145,7 +148,6 @@
             <div><label>Hot Rolled Coil Steel</label><input type="checkbox" value="hrc:com"></div>
         </div>
 
-
         <hr style="margin:16px 0 12px 0;">
 
         <h3>Vendor Filter (optional)</h3>
@@ -153,10 +155,12 @@
             <option value="">-- All Vendors --</option>
         </select>
 
-
         <hr style="margin:16px 0 12px 0;">
 
         <h3>Parts Unit Price History</h3>
+        <p style="font-size:12px; color:#666; margin-bottom:8px;">
+            Upload Excel file (sheet name must contain "Receiving" or "Vendors")
+        </p>
         <input type="file" id="excel-upload" accept=".xlsx,.xls">
 
         <div id="parts-controls" style="display:none; margin-top:10px;">
@@ -169,20 +173,19 @@
             </div>
             <button id="apply-date-filter">Apply Date Range</button>
 
-          <div style="margin:12px 0;">
-            <button id="combine-charts-btn" class="combine-btn">Combine...</button>
+            <div style="margin:12px 0;">
+                <button id="combine-charts-btn" class="combine-btn">Combine Selected Parts into One Chart</button>
             </div>
 
-<!-- PASTE THE NEW CLEAR BUTTON HERE -->
             <div style="margin-top:16px;">
-            <button id="clear-all-btn" style="background:#cc0000; color:white; ...">
-        Clear All Filters & Charts
-            </button>
-                </div>
+                <button id="clear-all-btn" style="background:#cc0000; color:white; border:none; padding:8px 12px; border-radius:4px; cursor:pointer; font-size:13.5px; width:auto;">
+                    Clear All Filters & Charts
+                </button>
+            </div>
 
-<div style="margin-top:8px;">
-    <span id="toggle-table" class="toggle-table">Show/Hide Raw Table</span>
-</div>
+            <div style="margin-top:8px;">
+                <span id="toggle-table" class="toggle-table">Show/Hide Raw Table</span>
+            </div>
         </div>
     </div>
 
@@ -191,6 +194,7 @@
         <div class="charts-grid" id="commodity-charts-container"></div>
 
         <div style="height: 50px;"></div>
+
         <div id="yoy-controls" style="margin-top:16px; display:none;">
             <h3>Vendor Yearly Spending (YoY)</h3>
             <div class="chart-container" style="padding:12px;">
@@ -221,7 +225,8 @@
 </div>
 
 <script src="https://embed.tradingeconomics.com/widget.js"></script>
-<script src="./xlsx.full.min.js"></script>
+<!-- Self-hosted SheetJS - MUST be uploaded to repo root as xlsx.full.min.js -->
+<script src="/TEWIDGET/xlsx.full.min.js"></script>
 <script>
 // ────────────────────────────────────────────────
 // COMMODITY CHECKBOXES
@@ -252,10 +257,11 @@ function renderCommodityCharts() {
         const div = document.createElement('div');
         div.className = 'chart-container';
         div.innerHTML = `<h3 style="margin:0 0 8px 0; font-size:1.1em;">${name}</h3>
-                         <div class="te-embed" data-widget="mc-pro" data-symbol="${symbol}" style="width:100%; height:420px;"></div>`;
+                         <div class="te-embed" data-widget="mc-pro" data-symbol="${symbol}"></div>`;
         commodityContainer.appendChild(div);
     });
 
+    // Re-init TE widgets
     document.querySelectorAll('script[src*="widget.js"]').forEach((s,i)=>{if(i>0)s.remove();});
     const s = document.createElement('script');
     s.src = 'https://embed.tradingeconomics.com/widget.js';
@@ -290,8 +296,25 @@ excelInput.addEventListener('change', e => {
     reader.onload = ev => {
         const data = new Uint8Array(ev.target.result);
         const wb = XLSX.read(data, {type:'array'});
-        const ws = wb.Sheets["Daily Receiving by Vendors"];
-        if (!ws) { alert('Sheet "Daily Receiving by Vendors" not found!'); return; }
+
+        // Auto-detect sheet containing "Receiving" or "Vendors" (handles name changes)
+        let ws = null;
+        let foundSheetName = '';
+        for (const sheetName in wb.Sheets) {
+            const lower = sheetName.toLowerCase();
+            if (lower.includes("receiving") || lower.includes("vendors") || lower.includes("daily")) {
+                ws = wb.Sheets[sheetName];
+                foundSheetName = sheetName;
+                break;
+            }
+        }
+
+        if (!ws) {
+            alert('Could not find a sheet containing "Receiving", "Vendors" or "Daily" in the name. Please check the Excel file.');
+            return;
+        }
+
+        console.log(`Using sheet: ${foundSheetName}`);
 
         rawData = XLSX.utils.sheet_to_json(ws, {defval:''});
 
@@ -448,7 +471,6 @@ function populatePartsSelector(vendor = '') {
     renderPartsContent();
 }
 
-
 // ────────────────────────────────────────────────
 // EVENT LISTENERS
 // ────────────────────────────────────────────────
@@ -473,7 +495,7 @@ document.getElementById('part-search').addEventListener('input', e => {
 });
 
 // ────────────────────────────────────────────────
-// PARTS INDIVIDUAL CHARTS (unchanged core logic)
+// PARTS INDIVIDUAL CHARTS
 // ────────────────────────────────────────────────
 const partsSelector = document.getElementById('parts-selector');
 const dateFrom = document.getElementById('date-from');
@@ -644,16 +666,14 @@ document.getElementById('combine-charts-btn').addEventListener('click', () => {
 });
 
 // ────────────────────────────────────────────────
-// CLEAR ALL BUTTON - Reset everything Excel-related
+// CLEAR ALL BUTTON
 // ────────────────────────────────────────────────
 document.getElementById('clear-all-btn').addEventListener('click', () => {
-    // 1. Reset commodity checkboxes (hide all commodity charts)
     document.querySelectorAll('.commodity-grid input[type="checkbox"]').forEach(cb => {
         cb.checked = false;
     });
-    renderCommodityCharts(); // this will clear the commodity container
+    renderCommodityCharts();
 
-    // 2. Reset vendor selector + hide YoY
     document.getElementById('vendor-selector').value = "";
     document.getElementById('yoy-controls').style.display = 'none';
     if (vendorYoYChartInstance) {
@@ -661,61 +681,30 @@ document.getElementById('clear-all-btn').addEventListener('click', () => {
         vendorYoYChartInstance = null;
     }
 
-    // 3. Clear parts multi-select + search input
     document.getElementById('part-search').value = "";
     Array.from(partsSelector.options).forEach(opt => {
         opt.selected = false;
-        opt.style.display = ''; // reset any search hiding
+        opt.style.display = '';
     });
 
-    // 4. Clear date range inputs
     document.getElementById('date-from').value = "";
     document.getElementById('date-to').value = "";
 
-    // 5. Hide combined chart + destroy it
     document.getElementById('combined-chart-container').style.display = 'none';
     if (combinedChart) {
         combinedChart.destroy();
         combinedChart = null;
     }
 
-    // 6. Hide raw table if visible
     tableContainer.style.display = 'none';
     tableContainer.innerHTML = '';
 
-    // 7. Re-render parts (now empty selection = clears charts)
     renderPartsContent();
 
-    // Optional: scroll back to top
     window.scrollTo({ top: 0, behavior: 'smooth' });
-});
-
-// ────────────────────────────────────────────────
-// LIVE COMMODITY WIDGET SIZE CHANGER
-// ────────────────────────────────────────────────
-document.getElementById('apply-widget-size').addEventListener('click', () => {
-    const selectedHeight = document.getElementById('widget-size-select').value;
-    const newHeight = selectedHeight + 'px';
-
-    // Update all existing .te-embed elements
-    document.querySelectorAll('.te-embed').forEach(el => {
-        el.style.height = newHeight;
-    });
-
-    // Optional: force Trading Economics script to re-apply (helps in some cases)
-    const oldScripts = document.querySelectorAll('script[src*="embed.tradingeconomics.com/widget.js"]');
-    oldScripts.forEach(s => s.remove());
-
-    const newScript = document.createElement('script');
-    newScript.src = 'https://embed.tradingeconomics.com/widget.js';
-    newScript.async = true;
-    document.body.appendChild(newScript);
-
-    console.log(`Commodity widgets resized to ${newHeight}`);
 });
 
 </script>
 
 </body>
 </html>
-
