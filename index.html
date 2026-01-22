@@ -50,6 +50,12 @@
             gap: 8px 12px;
             font-size: 13px;
         }
+        .commodity-scroll-wrapper {
+            max-height: 320px;
+            overflow-y: auto;
+            padding-right: 8px;
+            margin-bottom: 12px;
+        }
         .commodity-grid label {
             display: block;
             margin-bottom: 2px;
@@ -79,7 +85,7 @@
             padding: 14px;
             border-radius: 6px;
             box-shadow: 0 1px 5px rgba(0,0,0,0.08);
-            margin-bottom: 0;
+            margin-bottom: 12px;
         }
         .chart-wrapper {
             position: relative;
@@ -116,23 +122,30 @@
         #loading-overlay {
             position: absolute;
             top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(255,255,255,0.8);
+            background: rgba(255,255,255,0.85);
             display: none;
             justify-content: center;
             align-items: center;
             font-size: 16px;
             font-weight: bold;
             color: #0066cc;
-            z-index: 100;
+            z-index: 10;
+            border-radius: 6px;
         }
         #excel-error-box {
-            background: #ffebee;
-            color: #c62828;
+            background: #fff3e0;
+            color: #ef6c00;
             padding: 10px;
             margin-top: 12px;
             border-radius: 4px;
             font-size: 13px;
             display: none;
+            border-left: 4px solid #ff9800;
+        }
+        #excel-error-box.success {
+            background: #e8f5e9;
+            color: #2e7d32;
+            border-left-color: #4caf50;
         }
         @media (max-width: 1100px) {
             .container { flex-direction: column; }
@@ -156,18 +169,49 @@
         <h3>Commodity / Index Selector</h3>
         <p style="font-size:13px; margin:6px 0 10px 0;">Select items to display:</p>
 
-        <div class="commodity-grid">
-            <div><label>Copper (HG1:COM)</label><input type="checkbox" value="hg1:com" checked></div>
-            <div><label>PVC (PVC:COM)</label><input type="checkbox" value="pvc:com" checked></div>
-            <div><label>Silver Spot (XAG/USD)</label><input type="checkbox" value="xagusd:cur" checked></div>
-            <div><label>Rubber (JN1:COM)</label><input type="checkbox" value="jn1:com"></div>
-            <div><label>USD/JPY Exchange Rate</label><input type="checkbox" value="usdjpy:cur"></div>
-            <div><label>China Shanghai Composite (XIN9:IND)</label><input type="checkbox" value="xin9:ind" checked></div>
-            <div><label>Dow Jones (INDU:IND)</label><input type="checkbox" value="indu:ind"></div>
-            <div><label>Sumitomo Metal (5713:JP)</label><input type="checkbox" value="5713:jp"></div>
-            <div><label>Stainless Steel Coil</label><input type="checkbox" value="ssc:com"></div>
-            <div><label>Hot Rolled Coil Steel</label><input type="checkbox" value="hrc:com"></div>
+        <div class="commodity-scroll-wrapper">
+            <div class="commodity-grid">
+                <!-- Energy -->
+                <div><label>Crude Oil (WTI)</label><input type="checkbox" value="cl1:com" checked></div>
+                <div><label>Brent Crude Oil</label><input type="checkbox" value="co1:com"></div>
+                <div><label>Heating Oil / Diesel</label><input type="checkbox" value="ho1:com"></div>
+                <div><label>Natural Gas</label><input type="checkbox" value="ng1:com" checked></div>
+
+                <!-- Metals -->
+            
+
+                <div><label>Copper</label><input type="checkbox" value="hg1:com" checked></div>
+                <div><label>Gold</label><input type="checkbox" value="xauusd:cur" checked></div>
+                <div><label>Nickel</label><input type="checkbox" value="ln1:com"></div>
+                <div><label>Silver</label><input type="checkbox" value="xagusd:cur" checked></div>
+
+              
+
+                <!-- Lumber / Rubber / Glass -->
+                <div><label>Lumber</label><input type="checkbox" value="lb1:com"></div>
+                <div><label>Rubber</label><input type="checkbox" value="jn1:com"></div>
+
+
+                <!-- Chemicals / Resins -->
+        
+                <div><label>Polyvinyl Chloride (PVC)</label><input type="checkbox" value="pvc:com" checked></div>
+
+                <!-- Stock Market Indices -->
+                <div><label>USA NY Dow (US30)</label><input type="checkbox" value="indu:ind"></div>
+                <div><label>USA NASDAQ 100</label><input type="checkbox" value="us100:ind"></div>
+                <div><label>USA S&P 500</label><input type="checkbox" value="us500:ind"></div>
+                <div><label>Japan Nikkei 225</label><input type="checkbox" value="jp225:ind"></div>
+
+                <!-- Exchange Rates -->
+                <div><label>EUR/USD</label><input type="checkbox" value="eurusd:cur"></div>
+                <div><label>USD/JPY</label><input type="checkbox" value="usdjpy:cur" checked></div>
+                <div><label>USD/CAD</label><input type="checkbox" value="usdcad:cur"></div>
+            </div>
         </div>
+
+        <button id="reinit-widgets-btn" style="margin: 10px 0; background:#4caf50; color:white; border:none; padding:8px 12px; border-radius:4px; cursor:pointer; font-size:13px; width:100%;">
+            Reinitialize Selected Widgets
+        </button>
 
         <hr style="margin:16px 0 12px 0;">
 
@@ -184,10 +228,7 @@
         </p>
         <input type="file" id="excel-upload" accept=".xlsx,.xls">
 
-        <!-- Loading indicator -->
         <div id="loading-overlay">Processing Excel file...</div>
-
-        <!-- Error display -->
         <div id="excel-error-box"></div>
 
         <div id="parts-controls" style="display:none; margin-top:10px;">
@@ -253,62 +294,99 @@
 
 <script>
 // ────────────────────────────────────────────────
-// COMMODITY CHECKBOXES
+// COMMODITY CHECKBOXES – create once, hide/show only
 // ────────────────────────────────────────────────
 const commodityItems = {
-    "hg1:com": "Copper (HG1:COM)",
-    "pvc:com": "PVC (PVC:COM)",
-    "xagusd:cur": "Silver Spot (XAG/USD)",
-    "jn1:com": "Rubber (JN1:COM)",
-    "usdjpy:cur": "USD/JPY Exchange Rate",
-    "xin9:ind": "China Shanghai Composite (XIN9:IND)",
-    "indu:ind": "Dow Jones Industrial Average (INDU:IND)",
-    "5713:jp": "Sumitomo Metal Mining (5713:JP)",
-    "ssc:com": "Stainless Steel Coil (SSC:COM)",
-    "hrc:com": "Hot Rolled Coil Steel (HRC:COM)"
+    "cl1:com": "Crude Oil (WTI)",
+    "co1:com": "Brent Crude Oil",
+    "rb1:com": "Gasoline",
+    "ho1:com": "Heating Oil / Diesel",
+    "ng1:com": "Natural Gas",
+    "hg1:com": "Copper",
+    "xauusd:cur": "Gold",
+    "hrc:com": "HRC Steel",
+    "pb1:com": "Lead",
+    "lithium": "Lithium",
+    "ln1:com": "Nickel",
+    "xagusd:cur": "Silver",
+    "lb1:com": "Lumber",
+    "jn1:com": "Rubber",
+    "pvc:com": "Polyvinyl Chloride (PVC)",
+    "indu:ind": "USA NY Dow (US30)",
+    "us100:ind": "USA NASDAQ 100",
+    "us500:ind": "USA S&P 500",
+    "jp225:ind": "Japan Nikkei 225",
+    "eurusd:cur": "EUR/USD",
+    "usdjpy:cur": "USD/JPY",
+    "usdcad:cur": "USD/CAD",
+   
 };
 
 const commodityContainer = document.getElementById('commodity-charts-container');
 
-function renderCommodityCharts() {
-    commodityContainer.innerHTML = '';
-    const checked = document.querySelectorAll('.commodity-grid input:checked');
-    if (checked.length === 0) return;
+// Create all widgets on load (hidden)
+Object.keys(commodityItems).forEach(symbol => {
+    const name = commodityItems[symbol];
+    const div = document.createElement('div');
+    div.className = 'chart-container';
+    div.id = `widget-${symbol.replace(/[:/]/g, '-')}`; // unique ID
+    div.style.display = 'none'; // hidden by default
+    div.innerHTML = `<h3 style="margin:0 0 8px 0; font-size:1.1em;">${name}</h3>
+                     <div class="te-embed" data-widget="mc-pro" data-symbol="${symbol}"></div>`;
+    commodityContainer.appendChild(div);
+});
 
-    Array.from(checked).forEach(cb => {
-        const symbol = cb.value;
-        const name = commodityItems[symbol] || symbol;
-        const div = document.createElement('div');
-        div.className = 'chart-container';
-        div.innerHTML = `<h3 style="margin:0 0 8px 0; font-size:1.1em;">${name}</h3>
-                         <div class="te-embed" data-widget="mc-pro" data-symbol="${symbol}"></div>`;
-        commodityContainer.appendChild(div);
+function updateCommodityCharts() {
+    const checked = new Set();
+    document.querySelectorAll('.commodity-grid input:checked').forEach(cb => {
+        checked.add(cb.value);
     });
 
-    // Safe re-render for Trading Economics widgets
+    // Show checked, hide unchecked
+    Object.keys(commodityItems).forEach(symbol => {
+        const container = document.getElementById(`widget-${symbol.replace(/[:/]/g, '-')}`);
+        if (container) {
+            container.style.display = checked.has(symbol) ? 'block' : 'none';
+        }
+    });
+
+    // Re-init (helps if any were hidden for a long time)
     setTimeout(() => {
         if (window.TradingEconomics && window.TradingEconomics.render) {
             window.TradingEconomics.render();
         }
-    }, 500);
+    }, 800);
 }
 
-document.querySelectorAll('.commodity-grid input[type="checkbox"]').forEach(cb => {
-    cb.addEventListener('change', renderCommodityCharts);
+// Event delegation
+document.querySelector('.commodity-scroll-wrapper').addEventListener('change', e => {
+    if (e.target.matches('input[type="checkbox"]')) {
+        updateCommodityCharts();
+    }
 });
-renderCommodityCharts();
+
+// Reinitialize button
+document.getElementById('reinit-widgets-btn').addEventListener('click', updateCommodityCharts);
+
+// Initial update
+updateCommodityCharts();
 
 // ────────────────────────────────────────────────
-// DATA STRUCTURES
+// EXCEL + PARTS + VENDOR CODE (keep your existing logic here)
 // ────────────────────────────────────────────────
+
+// Paste your existing code for rawData, parseAllData, vendor selector, parts, combine, clear, etc.
+// Example placeholder (replace with your full code):
 let rawData = [];
 let partPriceData = {};
 let vendorToPartsMap = {};
 let vendorYearlyCache = {};
 let allPartsList = [];
 
+// ... paste your existing Excel listener, parseAllData, populateVendorSelector, etc. here ...
+// (keep everything below this point the same as your last working version)
 // ────────────────────────────────────────────────
-// DYNAMIC EXCEL IMPORT – TRY ALL SHEETS, COLLECT FROM MULTIPLE IF NEEDED
+// DYNAMIC EXCEL IMPORT
 // ────────────────────────────────────────────────
 const excelInput = document.getElementById('excel-upload');
 const loadingOverlay = document.getElementById('loading-overlay');
@@ -318,7 +396,6 @@ excelInput.addEventListener('change', e => {
     const file = e.target.files[0];
     if (!file) return;
 
-    // Show loading
     loadingOverlay.style.display = 'flex';
     errorBox.style.display = 'none';
     errorBox.innerHTML = '';
@@ -330,12 +407,12 @@ excelInput.addEventListener('change', e => {
         try {
             wb = XLSX.read(data, {type:'array'});
         } catch (err) {
-            showError("Failed to read Excel file: " + err.message);
+            errorBox.innerHTML = "Failed to read Excel file: " + err.message;
+            errorBox.style.display = 'block';
             loadingOverlay.style.display = 'none';
             return;
         }
 
-        // Column keywords
         const keywords = {
             part: ['part', 'part#', 'part no', 'part number', 'pn'],
             vendor: ['vendor', 'vendor#', 'vendor no', 'supplier'],
@@ -344,7 +421,6 @@ excelInput.addEventListener('change', e => {
             ext: ['ext', 'ext $', 'extended', 'total', 'ext cost', 'extended cost']
         };
 
-        // Collect data from all viable sheets
         let combinedRows = [];
         let usedSheets = [];
 
@@ -363,7 +439,7 @@ excelInput.addEventListener('change', e => {
             });
 
             const matchCount = Object.keys(headerMap).length;
-            if (matchCount >= 3) { // Accept sheets with at least 3 columns
+            if (matchCount >= 3) {
                 const rawRows = XLSX.utils.sheet_to_json(ws, {defval:''}).slice(1);
                 const normalized = rawRows.map(row => {
                     const values = Object.values(row);
@@ -387,24 +463,17 @@ excelInput.addEventListener('change', e => {
         loadingOverlay.style.display = 'none';
 
         if (combinedRows.length === 0) {
-            let msg = "No sheet had enough required columns (need at least 3 of: Part #, Vendor #, Rec Date, Unit $, EXT $).<br><br>";
-            for (const sheetName in wb.Sheets) {
-                const ws = wb.Sheets[sheetName];
-                const headers = XLSX.utils.sheet_to_json(ws, {header:1})[0] || [];
-                msg += `Sheet "${sheetName}": ${headers.join(", ") || "(empty)"}<br>`;
-            }
-            showError(msg);
+            errorBox.innerHTML = "No sheet had at least 3 required columns (Part #, Vendor #, Rec Date, Unit $, EXT $).";
+            errorBox.style.display = 'block';
             return;
         }
 
         rawData = combinedRows;
 
-        // Show success info
-        let info = `Loaded data from ${usedSheets.length} sheet(s):<br>`;
+        let info = `Loaded ${combinedRows.length} rows from ${usedSheets.length} sheet(s):<br>`;
         usedSheets.forEach(s => info += `• ${s}<br>`);
-        errorBox.style.background = '#e8f5e9';
-        errorBox.style.color = '#2e7d32';
         errorBox.innerHTML = info;
+        errorBox.className = 'success';
         errorBox.style.display = 'block';
 
         parseAllData();
@@ -415,17 +484,20 @@ excelInput.addEventListener('change', e => {
     reader.readAsArrayBuffer(file);
 });
 
-// Show error in sidebar box
 function showError(message) {
     errorBox.innerHTML = message;
-    errorBox.style.background = '#ffebee';
-    errorBox.style.color = '#c62828';
+    errorBox.className = '';
     errorBox.style.display = 'block';
-    loadingOverlay.style.display = 'none';
+}
+
+function showSuccess(message) {
+    errorBox.innerHTML = message;
+    errorBox.className = 'success';
+    errorBox.style.display = 'block';
 }
 
 // ────────────────────────────────────────────────
-// parseAllData (same as before)
+// parseAllData
 // ────────────────────────────────────────────────
 function parseAllData() {
     partPriceData = {};
@@ -773,7 +845,8 @@ document.getElementById('clear-all-btn').addEventListener('click', () => {
     document.querySelectorAll('.commodity-grid input[type="checkbox"]').forEach(cb => {
         cb.checked = false;
     });
-    renderCommodityCharts();
+    updateCommodityCharts();
+
 
     document.getElementById('vendor-selector').value = "";
     document.getElementById('yoy-controls').style.display = 'none';
