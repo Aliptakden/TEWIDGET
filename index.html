@@ -29,6 +29,7 @@
             padding: 14px 12px;
             border-radius: 6px;
             box-shadow: 0 1px 5px rgba(0,0,0,0.08);
+            position: relative;
         }
         .main-content {
             flex: 1;
@@ -112,7 +113,27 @@
             font-size: 13.5px;
             margin: 12px 0;
         }
-
+        #loading-overlay {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(255,255,255,0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            font-size: 16px;
+            font-weight: bold;
+            color: #0066cc;
+            z-index: 100;
+        }
+        #excel-error-box {
+            background: #ffebee;
+            color: #c62828;
+            padding: 10px;
+            margin-top: 12px;
+            border-radius: 4px;
+            font-size: 13px;
+            display: none;
+        }
         @media (max-width: 1100px) {
             .container { flex-direction: column; }
             .sidebar { width: 100%; }
@@ -121,7 +142,7 @@
     </style>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
-    <!-- Self-hosted SheetJS (must be uploaded to repo root as xlsx.full.min.js) -->
+    <script src="https://embed.tradingeconomics.com/widget.js"></script>
     <script src="xlsx.full.min.js"></script>
 </head>
 <body>
@@ -159,9 +180,15 @@
 
         <h3>Parts Unit Price History</h3>
         <p style="font-size:12px; color:#666; margin-bottom:8px;">
-            Upload Excel file (sheet name must contain "Receiving" or "Vendors")
+            Upload Excel file (auto-detects columns like "Part #", "Vendor #", "Rec Date", "Unit $", "EXT $")
         </p>
         <input type="file" id="excel-upload" accept=".xlsx,.xls">
+
+        <!-- Loading indicator -->
+        <div id="loading-overlay">Processing Excel file...</div>
+
+        <!-- Error display -->
+        <div id="excel-error-box"></div>
 
         <div id="parts-controls" style="display:none; margin-top:10px;">
             <input type="text" id="part-search" placeholder="Search Part #...">
@@ -224,9 +251,6 @@
 
 </div>
 
-<script src="https://embed.tradingeconomics.com/widget.js"></script>
-<!-- Self-hosted SheetJS - MUST be uploaded to repo root as xlsx.full.min.js -->
-<script src="/TEWIDGET/xlsx.full.min.js"></script>
 <script>
 // ────────────────────────────────────────────────
 // COMMODITY CHECKBOXES
@@ -261,12 +285,12 @@ function renderCommodityCharts() {
         commodityContainer.appendChild(div);
     });
 
-    // Re-init TE widgets
-    document.querySelectorAll('script[src*="widget.js"]').forEach((s,i)=>{if(i>0)s.remove();});
-    const s = document.createElement('script');
-    s.src = 'https://embed.tradingeconomics.com/widget.js';
-    s.async = true;
-    document.body.appendChild(s);
+    // Safe re-render for Trading Economics widgets
+    setTimeout(() => {
+        if (window.TradingEconomics && window.TradingEconomics.render) {
+            window.TradingEconomics.render();
+        }
+    }, 500);
 }
 
 document.querySelectorAll('.commodity-grid input[type="checkbox"]').forEach(cb => {
@@ -278,45 +302,110 @@ renderCommodityCharts();
 // DATA STRUCTURES
 // ────────────────────────────────────────────────
 let rawData = [];
-let partPriceData = {};           // part → [{date, price}]
-let vendorToPartsMap = {};        // vendor → Set<part>
-let vendorYearlyCache = {};       // vendor → {year: totalEXT}
+let partPriceData = {};
+let vendorToPartsMap = {};
+let vendorYearlyCache = {};
 let allPartsList = [];
 
 // ────────────────────────────────────────────────
-// EXCEL PARSING
+// DYNAMIC EXCEL IMPORT – TRY ALL SHEETS, COLLECT FROM MULTIPLE IF NEEDED
 // ────────────────────────────────────────────────
 const excelInput = document.getElementById('excel-upload');
+const loadingOverlay = document.getElementById('loading-overlay');
+const errorBox = document.getElementById('excel-error-box');
 
 excelInput.addEventListener('change', e => {
     const file = e.target.files[0];
     if (!file) return;
 
+    // Show loading
+    loadingOverlay.style.display = 'flex';
+    errorBox.style.display = 'none';
+    errorBox.innerHTML = '';
+
     const reader = new FileReader();
     reader.onload = ev => {
         const data = new Uint8Array(ev.target.result);
-        const wb = XLSX.read(data, {type:'array'});
-
-        // Auto-detect sheet containing "Receiving" or "Vendors" (handles name changes)
-        let ws = null;
-        let foundSheetName = '';
-        for (const sheetName in wb.Sheets) {
-            const lower = sheetName.toLowerCase();
-            if (lower.includes("receiving") || lower.includes("vendors") || lower.includes("daily")) {
-                ws = wb.Sheets[sheetName];
-                foundSheetName = sheetName;
-                break;
-            }
-        }
-
-        if (!ws) {
-            alert('Could not find a sheet containing "Receiving", "Vendors" or "Daily" in the name. Please check the Excel file.');
+        let wb;
+        try {
+            wb = XLSX.read(data, {type:'array'});
+        } catch (err) {
+            showError("Failed to read Excel file: " + err.message);
+            loadingOverlay.style.display = 'none';
             return;
         }
 
-        console.log(`Using sheet: ${foundSheetName}`);
+        // Column keywords
+        const keywords = {
+            part: ['part', 'part#', 'part no', 'part number', 'pn'],
+            vendor: ['vendor', 'vendor#', 'vendor no', 'supplier'],
+            date: ['rec date', 'date', 'receiving date', 'rec', 'received'],
+            unit: ['unit', 'unit $', 'unit price', 'price', 'unit cost', 'cost'],
+            ext: ['ext', 'ext $', 'extended', 'total', 'ext cost', 'extended cost']
+        };
 
-        rawData = XLSX.utils.sheet_to_json(ws, {defval:''});
+        // Collect data from all viable sheets
+        let combinedRows = [];
+        let usedSheets = [];
+
+        for (const sheetName in wb.Sheets) {
+            const ws = wb.Sheets[sheetName];
+            const headers = XLSX.utils.sheet_to_json(ws, {header:1})[0] || [];
+            const lowerHeaders = headers.map(h => String(h || '').trim().toLowerCase().replace(/_/g, ''));
+
+            const headerMap = {};
+            lowerHeaders.forEach((h, idx) => {
+                if (keywords.part.some(k => h.includes(k))) headerMap.part = idx;
+                if (keywords.vendor.some(k => h.includes(k))) headerMap.vendor = idx;
+                if (keywords.date.some(k => h.includes(k))) headerMap.date = idx;
+                if (keywords.unit.some(k => h.includes(k))) headerMap.unit = idx;
+                if (keywords.ext.some(k => h.includes(k))) headerMap.ext = idx;
+            });
+
+            const matchCount = Object.keys(headerMap).length;
+            if (matchCount >= 3) { // Accept sheets with at least 3 columns
+                const rawRows = XLSX.utils.sheet_to_json(ws, {defval:''}).slice(1);
+                const normalized = rawRows.map(row => {
+                    const values = Object.values(row);
+                    return {
+                        'Part #': values[headerMap.part] || '',
+                        'Vendor #': values[headerMap.vendor] || '',
+                        'Rec Date': values[headerMap.date] || '',
+                        'Unit $': values[headerMap.unit] || '',
+                        'EXT $': values[headerMap.ext] || '',
+                        ...row
+                    };
+                }).filter(row => row['Part #'] || row['Vendor #']);
+
+                if (normalized.length > 0) {
+                    combinedRows = combinedRows.concat(normalized);
+                    usedSheets.push(`${sheetName} (${matchCount}/5 columns, ${normalized.length} rows)`);
+                }
+            }
+        }
+
+        loadingOverlay.style.display = 'none';
+
+        if (combinedRows.length === 0) {
+            let msg = "No sheet had enough required columns (need at least 3 of: Part #, Vendor #, Rec Date, Unit $, EXT $).<br><br>";
+            for (const sheetName in wb.Sheets) {
+                const ws = wb.Sheets[sheetName];
+                const headers = XLSX.utils.sheet_to_json(ws, {header:1})[0] || [];
+                msg += `Sheet "${sheetName}": ${headers.join(", ") || "(empty)"}<br>`;
+            }
+            showError(msg);
+            return;
+        }
+
+        rawData = combinedRows;
+
+        // Show success info
+        let info = `Loaded data from ${usedSheets.length} sheet(s):<br>`;
+        usedSheets.forEach(s => info += `• ${s}<br>`);
+        errorBox.style.background = '#e8f5e9';
+        errorBox.style.color = '#2e7d32';
+        errorBox.innerHTML = info;
+        errorBox.style.display = 'block';
 
         parseAllData();
         populateVendorSelector();
@@ -326,6 +415,18 @@ excelInput.addEventListener('change', e => {
     reader.readAsArrayBuffer(file);
 });
 
+// Show error in sidebar box
+function showError(message) {
+    errorBox.innerHTML = message;
+    errorBox.style.background = '#ffebee';
+    errorBox.style.color = '#c62828';
+    errorBox.style.display = 'block';
+    loadingOverlay.style.display = 'none';
+}
+
+// ────────────────────────────────────────────────
+// parseAllData (same as before)
+// ────────────────────────────────────────────────
 function parseAllData() {
     partPriceData = {};
     vendorToPartsMap = {};
@@ -708,4 +809,3 @@ document.getElementById('clear-all-btn').addEventListener('click', () => {
 
 </body>
 </html>
-
