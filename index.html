@@ -80,6 +80,11 @@
             grid-template-columns: repeat(auto-fit, minmax(720px, 1fr));
             gap: 18px 22px;
         }
+        .te-embed {
+            width: 100%;
+            height: 560px;
+        }
+
         .chart-container {
             background: white;
             padding: 14px;
@@ -206,11 +211,28 @@
                 <div><label>EUR/USD</label><input type="checkbox" value="eurusd:cur"></div>
                 <div><label>USD/JPY</label><input type="checkbox" value="usdjpy:cur" checked></div>
                 <div><label>USD/CAD</label><input type="checkbox" value="usdcad:cur"></div>
+
+                <!-- Industrial / Materials -->
+                <div><label>Aluminum</label><input type="checkbox" value="LMAHDS03:COM"></div>
+                <div><label>Cobalt</label><input type="checkbox" value="LCO1:COM"></div>
+                <div><label>Gasoline</label><input type="checkbox" value="XB1:COM"></div>
+                <div><label>HRC Steel</label><input type="checkbox" value="HRC:COM"></div>
+                <div><label>Lithium</label><input type="checkbox" value="LC:COM"></div>
+                <div><label>Lumber</label><input type="checkbox" value="LB1:COM"></div>
+                <div><label>Naphtha</label><input type="checkbox" value="MOB:COM"></div>
+                <div><label>Nickel</label><input type="checkbox" value="LN1:COM"></div>
+                <div><label>Polyethylene</label><input type="checkbox" value="POL:COM"></div>
+                <div><label>Polypropylene</label><input type="checkbox" value="PYL:COM"></div>
+                <div><label>Propane</label><input type="checkbox" value="PNL:COM"></div>
+                <div><label>Scrap Steel</label><input type="checkbox" value="SSC:COM"></div>
+                <div><label>Silicon</label><input type="checkbox" value="SI:COM"></div>
+                <div><label>Containerized Freight</label><input type="checkbox" value="SPSCFI:COM"></div>
+
             </div>
         </div>
 
         <button id="reinit-widgets-btn" style="margin: 10px 0; background:#4caf50; color:white; border:none; padding:8px 12px; border-radius:4px; cursor:pointer; font-size:13px; width:100%;">
-            Reinitialize Selected Widgets
+            This Button is broke
         </button>
 
         <hr style="margin:16px 0 12px 0;">
@@ -270,7 +292,7 @@
                 <div class="chart-wrapper" style="height:360px;">
                     <canvas id="vendorYoYChart"></canvas>
                 </div>
-                <div class="price-box" style="margin-top:12px; max-height:220px;">
+                <div class="price-box" style="margin-top:12px; max-height:24px;">
                     <table id="vendor-yoy-table">
                         <thead><tr><th>Year</th><th>Total EXT $</th><th>YoY % Change</th></tr></thead>
                         <tbody></tbody>
@@ -319,6 +341,21 @@ const commodityItems = {
     "eurusd:cur": "EUR/USD",
     "usdjpy:cur": "USD/JPY",
     "usdcad:cur": "USD/CAD",
+    "LMAHDS03:COM": "Aluminum",
+    "LCO1:COM": "Cobalt",
+    "XB1:COM": "Gasoline",
+    "HRC:COM": "HRC Steel",
+    "LC:COM": "Lithium",
+    "LB1:COM": "Lumber",
+    "MOB:COM": "Naphtha",
+    "LN1:COM": "Nickel",
+    "POL:COM": "Polyethylene",
+    "PYL:COM": "Polypropylene",
+    "PNL:COM": "Propane",
+    "SSC:COM": "Scrap Steel",
+    "SI:COM": "Silicon",
+    "SPSCFI:COM": "Containerized Freight",
+
    
 };
 
@@ -332,7 +369,10 @@ Object.keys(commodityItems).forEach(symbol => {
     div.id = `widget-${symbol.replace(/[:/]/g, '-')}`; // unique ID
     div.style.display = 'none'; // hidden by default
     div.innerHTML = `<h3 style="margin:0 0 8px 0; font-size:1.1em;">${name}</h3>
-                     <div class="te-embed" data-widget="mc-pro" data-symbol="${symbol}"></div>`;
+                 <div class="te-embed"
+                      data-widget="mc-pro"
+                      data-symbol="${symbol}"
+                      data-height="550"></div>`;
     commodityContainer.appendChild(div);
 });
 
