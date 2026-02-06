@@ -204,49 +204,54 @@
 
         <div class="commodity-scroll-wrapper">
             <div class="commodity-grid">
+
                 <!-- Energy -->
-                <div><label>Crude Oil (WTI)</label><input type="checkbox" value="cl1:com" checked></div>
+                <div><label>Crude Oil (WTI)</label><input type="checkbox" value="cl1:com" ></div>
                 <div><label>Brent Crude Oil</label><input type="checkbox" value="co1:com"></div>
                 <div><label>Heating Oil / Diesel</label><input type="checkbox" value="ho1:com"></div>
-                <div><label>Natural Gas</label><input type="checkbox" value="ng1:com" checked></div>
+                <div><label>Natural Gas</label><input type="checkbox" value="ng1:com" ></div>
+                <div><label>Gasoline</label><input type="checkbox" value="XB1:COM"></div>
+                <div><label>Propane</label><input type="checkbox" value="PNL:COM"></div>
+                <div><label>Polyethylene</label><input type="checkbox" value="POL:COM"></div>
+                <div><label>Polypropylene</label><input type="checkbox" value="PYL:COM"></div>
 
                 <!-- Metals -->
-                <div><label>Copper</label><input type="checkbox" value="hg1:com" checked></div>
-                <div><label>Gold</label><input type="checkbox" value="xauusd:cur" checked></div>
-                <div><label>Nickel</label><input type="checkbox" value="ln1:com"></div>
-                <div><label>Silver</label><input type="checkbox" value="xagusd:cur" checked></div>
+                <div><label>Copper</label><input type="checkbox" value="hg1:com" ></div>
+                <div><label>Gold</label><input type="checkbox" value="xauusd:cur" ></div>
+                <div><label>Silver</label><input type="checkbox" value="xagusd:cur" ></div>
+                <div><label>Steel Rebar</label><input type="checkbox" value="jbp:com"></div>
+                <div><label>Scrap Steel</label><input type="checkbox" value="SSC:COM"></div>
+                <div><label>HRC Steel</label><input type="checkbox" value="HRC:COM"></div>
+                <div><label>Nickel</label><input type="checkbox" value="LN1:COM"></div>
+                <div><label>Aluminum</label><input type="checkbox" value="LMAHDS03:COM"></div>
 
                 <!-- Lumber / Rubber / Glass -->
-                <div><label>Lumber</label><input type="checkbox" value="lb1:com"></div>
-                <div><label>Rubber</label><input type="checkbox" value="jn1:com"></div>
-
+                <div><label>Rubber</label><input type="checkbox" value="JN1:COM"></div>
+                <div><label>Lumber</label><input type="checkbox" value="LB1:COM"></div>
+                <div><label>Glass</label><input type="checkbox" value="5201:jp"></div>
                 <!-- Chemicals / Resins -->
-                <div><label>Polyvinyl Chloride (PVC)</label><input type="checkbox" value="pvc:com" checked></div>
+                <div><label>Polyvinyl Chloride (PVC)</label><input type="checkbox" value="pvc:com"></div>
+                
 
                 <!-- Stock Market Indices -->
                 <div><label>USA NY Dow (US30)</label><input type="checkbox" value="indu:ind"></div>
                 <div><label>USA NASDAQ 100</label><input type="checkbox" value="us100:ind"></div>
-                <div><label>USA S&P 500</label><input type="checkbox" value="us500:ind"></div>
-                <div><label>Japan Nikkei 225</label><input type="checkbox" value="jp225:ind"></div>
-
+                <div><label>USA S&P 500</label><input type="checkbox" value="spx:ind"></div>
+                <div><label>Japan Nikkei 225</label><input type="checkbox" value="nky:ind"></div>
+                <div><label>SHANGHAI - CSI300</label><input type="checkbox" value="shsz300:ind"></div>
+                
                 <!-- Exchange Rates -->
                 <div><label>EUR/USD</label><input type="checkbox" value="eurusd:cur"></div>
-                <div><label>USD/JPY</label><input type="checkbox" value="usdjpy:cur" checked></div>
+                <div><label>USD/JPY</label><input type="checkbox" value="usdjpy:cur"></div>
                 <div><label>USD/CAD</label><input type="checkbox" value="usdcad:cur"></div>
+                <div><label>USD/INR</label><input type="checkbox" value="usdinr:cur"></div>
+                <div><label>USD/MXN</label><input type="checkbox" value="usdmxn:cur"></div>
 
                 <!-- Industrial / Materials -->
-                <div><label>Aluminum</label><input type="checkbox" value="LMAHDS03:COM"></div>
                 <div><label>Cobalt</label><input type="checkbox" value="LCO1:COM"></div>
-                <div><label>Gasoline</label><input type="checkbox" value="XB1:COM"></div>
-                <div><label>HRC Steel</label><input type="checkbox" value="HRC:COM"></div>
                 <div><label>Lithium</label><input type="checkbox" value="LC:COM"></div>
-                <div><label>Lumber</label><input type="checkbox" value="LB1:COM"></div>
-                <div><label>Naphtha</label><input type="checkbox" value="MOB:COM"></div>
-                <div><label>Nickel</label><input type="checkbox" value="LN1:COM"></div>
-                <div><label>Polyethylene</label><input type="checkbox" value="POL:COM"></div>
-                <div><label>Polypropylene</label><input type="checkbox" value="PYL:COM"></div>
-                <div><label>Propane</label><input type="checkbox" value="PNL:COM"></div>
-                <div><label>Scrap Steel</label><input type="checkbox" value="SSC:COM"></div>
+                
+                <div><label>Naphtha</label><input type="checkbox" value="MOB:COM"></div>               
                 <div><label>Silicon</label><input type="checkbox" value="SI:COM"></div>
                 <div><label>Containerized Freight</label><input type="checkbox" value="SPSCFI:COM"></div>
             </div>
@@ -337,38 +342,44 @@
 
 <script>
 // ────────────────────────────────────────────────
-// COMMODITY CHECKBOXES
+// COMMODITY CHECKBOXES – FIXED & CLEANED
 // ────────────────────────────────────────────────
 const commodityItems = {
-    "cl1:com": "Crude Oil (WTI)",
-    "co1:com": "Brent Crude Oil",
-    "ng1:com": "Natural Gas",
-    "ho1:com": "Heating Oil / Diesel",
-    "hg1:com": "Copper",
-    "xauusd:cur": "Gold",
-    "xagusd:cur": "Silver",
-    "pvc:com": "Polyvinyl Chloride (PVC)",
-    "indu:ind": "USA NY Dow (US30)",
-    "us100:ind": "USA NASDAQ 100",
-    "us500:ind": "USA S&P 500",
-    "jp225:ind": "Japan Nikkei 225",
-    "eurusd:cur": "EUR/USD",
-    "usdjpy:cur": "USD/JPY",
-    "usdcad:cur": "USD/CAD",
+    "cl1:com":      "Crude Oil (WTI)",
+    "co1:com":      "Brent Crude Oil",
+    "ng1:com":      "Natural Gas",
+    "ho1:com":      "Heating Oil / Diesel",
+    "hg1:com":      "Copper",
+    "xauusd:cur":   "Gold",
+    "xagusd:cur":   "Silver",
+    "pvc:com":      "Polyvinyl Chloride (PVC)",
+    "indu:ind":     "USA NY Dow (US30)",
+    "us100:ind":    "USA NASDAQ 100",
+    "spx:ind":      "USA S&P 500",
+    "nky:ind":      "Japan Nikkei 225",
+    "shsz300:ind":  "SHANGHAI - CSI300",
+    "eurusd:cur":   "EUR/USD",
+    "usdjpy:cur":   "USD/JPY",
+    "usdcad:cur":   "USD/CAD",
+    "usdinr:cur":   "USD/INR",
+    "usdmxn:cur":   "USD/MXN",
     "LMAHDS03:COM": "Aluminum",
-    "LCO1:COM": "Cobalt",
-    "XB1:COM": "Gasoline",
-    "HRC:COM": "HRC Steel",
-    "LC:COM": "Lithium",
-    "LB1:COM": "Lumber",
-    "MOB:COM": "Naphtha",
-    "LN1:COM": "Nickel",
-    "POL:COM": "Polyethylene",
-    "PYL:COM": "Polypropylene",
-    "PNL:COM": "Propane",
-    "SSC:COM": "Scrap Steel",
-    "SI:COM": "Silicon",
-    "SPSCFI:COM": "Containerized Freight"
+    "LCO1:COM":     "Cobalt",
+    "XB1:COM":      "Gasoline",
+    "HRC:COM":      "HRC Steel",
+    "LC:COM":       "Lithium",
+    "LB1:COM":      "Lumber",
+    "MOB:COM":      "Naphtha",
+    "LN1:COM":      "Nickel",
+    "POL:COM":      "Polyethylene",
+    "PYL:COM":      "Polypropylene",
+    "PNL:COM":      "Propane",
+    "SSC:COM":      "Scrap Steel",
+    "SI:COM":       "Silicon",
+    "SPSCFI:COM":   "Containerized Freight",
+    "JN1:COM":      "Rubber",
+    "jbp:com":      "Steel Rebar",
+    "5201:jp":      "Glass (Asahi)"
 };
 
 const commodityContainer = document.getElementById('commodity-charts-container');
@@ -411,8 +422,8 @@ document.querySelector('.commodity-scroll-wrapper').addEventListener('change', e
 });
 
 document.getElementById('reinit-widgets-btn').addEventListener('click', () => {
-    document.querySelectorAll('.commodity-grid input[type="checkbox"]').forEach(checkbox => {
-        checkbox.checked = false;
+    document.querySelectorAll('.commodity-grid input[type="checkbox"]').forEach(cb => {
+        cb.checked = false;
     });
     document.querySelectorAll('#commodity-charts-container .chart-container').forEach(container => {
         container.style.display = 'none';
@@ -457,7 +468,7 @@ excelInput.addEventListener('change', e => {
         const data = new Uint8Array(ev.target.result);
         let wb;
         try {
-            wb = XLSX.read(data, {type:'array'});
+            wb = XLSX.read(data, { type: 'array' });
         } catch (err) {
             errorBox.innerHTML = "Failed to read Excel file: " + err.message;
             errorBox.style.display = 'block';
@@ -479,7 +490,7 @@ excelInput.addEventListener('change', e => {
 
         for (const sheetName in wb.Sheets) {
             const ws = wb.Sheets[sheetName];
-            const headers = XLSX.utils.sheet_to_json(ws, {header:1})[0] || [];
+            const headers = XLSX.utils.sheet_to_json(ws, { header: 1 })[0] || [];
             const lowerHeaders = headers.map(h => String(h || '').trim().toLowerCase().replace(/_/g, ''));
 
             const headerMap = {};
@@ -494,7 +505,7 @@ excelInput.addEventListener('change', e => {
 
             const matchCount = Object.keys(headerMap).length;
             if (matchCount >= 3) {
-                const rawRows = XLSX.utils.sheet_to_json(ws, {defval:''}).slice(1);
+                const rawRows = XLSX.utils.sheet_to_json(ws, { defval: '' }).slice(1);
                 const normalized = rawRows.map(row => {
                     const values = Object.values(row);
                     return {
@@ -589,7 +600,7 @@ function parseAllData() {
         if (isNaN(price)) return;
 
         if (!partPriceData[part]) partPriceData[part] = [];
-        partPriceData[part].push({date: dateStr, price, vendor: vendor || 'Unknown'});
+        partPriceData[part].push({ date: dateStr, price, vendor: vendor || 'Unknown' });
     });
 
     Object.values(partPriceData).forEach(arr => arr.sort((a,b) => a.date.localeCompare(b.date)));
@@ -717,7 +728,7 @@ document.getElementById('vendor-selector').addEventListener('change', e => {
 });
 
 // ────────────────────────────────────────────────
-// PARTS CHARTS – with description + manual entry with vendor
+// PARTS CHARTS + MANUAL ENTRY
 // ────────────────────────────────────────────────
 const partsSelector = document.getElementById('parts-selector');
 const dateFrom = document.getElementById('date-from');
@@ -774,11 +785,7 @@ function renderPartsContent() {
         const datasets = [];
 
         if (selectedVendor) {
-            const chartData = data.map(d => ({
-                x: new Date(d.date),
-                y: d.price
-            }));
-
+            const chartData = data.map(d => ({ x: new Date(d.date), y: d.price }));
             datasets.push({
                 label: `${part} — ${selectedVendor}`,
                 data: chartData,
@@ -827,7 +834,6 @@ function renderPartsContent() {
             </h3>`;
         chartDiv.appendChild(wrapper);
 
-        // Manual entry section with vendor dropdown
         const addSection = document.createElement('div');
         addSection.style.marginTop = '12px';
         addSection.innerHTML = `
@@ -878,17 +884,14 @@ function renderPartsContent() {
                 return;
             }
 
-            // Fallback: if "Manual" is selected but a vendor is active in filter, use it
             if (chosenVendor === 'Manual' && selectedVendor) {
                 chosenVendor = selectedVendor;
             }
 
-            // Add to underlying data
             const newPoint = { date: dateVal, price: priceVal, vendor: chosenVendor };
             partPriceData[part].push(newPoint);
             partPriceData[part].sort((a,b) => a.date.localeCompare(b.date));
 
-            // Add to current chart datasets
             let found = false;
             for (const ds of datasets) {
                 if (ds.label.includes(chosenVendor)) {
@@ -899,7 +902,6 @@ function renderPartsContent() {
             }
 
             if (!found) {
-                // Create new dataset/line for this vendor
                 const hue = (datasets.length * 137) % 360;
                 const color = `hsl(${hue}, 70%, 50%)`;
                 datasets.push({
@@ -914,7 +916,6 @@ function renderPartsContent() {
                 });
             }
 
-            // Re-create chart
             if (partCharts[part]) partCharts[part].destroy();
 
             partCharts[part] = new Chart(canvas, {
@@ -935,10 +936,8 @@ function renderPartsContent() {
                 }
             });
 
-            // Update point count
             chartDiv.querySelector('h3 small').textContent = `(${data.length + 1} points)`;
 
-            // Clear & hide
             dateInput.value = '';
             priceInput.value = '';
             vendorSelect.value = 'Manual';
@@ -1052,8 +1051,9 @@ document.getElementById('combine-charts-btn').addEventListener('click', () => {
         } else {
             const vendorGroups = {};
             data.forEach(d => {
-                if (!vendorGroups[d.vendor]) vendorGroups[d.vendor] = [];
-                vendorGroups[d.vendor].push({x: new Date(d.date), y: d.price});
+                const v = d.vendor || 'Unknown';
+                if (!vendorGroups[v]) vendorGroups[v] = [];
+                vendorGroups[v].push({x: new Date(d.date), y: d.price});
             });
 
             Object.keys(vendorGroups).forEach((v, vIdx) => {
@@ -1097,8 +1097,8 @@ document.getElementById('combine-charts-btn').addEventListener('click', () => {
             maintainAspectRatio: false,
             interaction: { mode: 'index', intersect: false },
             scales: {
-                x: { type: 'time', time: {unit:'month', displayFormats:{month:'MMM yy'}}, title:{display:true,text:'Date'} },
-                y: { title: {display:true, text:'Unit Price ($)'}, ticks: {callback: v => '$'+v.toFixed(2)} }
+                x: { type: 'time', time: { unit: 'month', displayFormats: { month: 'MMM yy' } }, title: { display: true, text: 'Date' } },
+                y: { title: { display: true, text: 'Unit Price ($)' }, ticks: { callback: v => '$' + v.toFixed(2) } }
             },
             plugins: {
                 legend: { position: 'top', labels: { boxWidth: 20, padding: 16, usePointStyle: true } },
@@ -1107,7 +1107,7 @@ document.getElementById('combine-charts-btn').addEventListener('click', () => {
         }
     });
 
-    cont.scrollIntoView({behavior:'smooth', block:'start'});
+    cont.scrollIntoView({ behavior: 'smooth', block: 'start' });
 });
 
 // ────────────────────────────────────────────────
@@ -1145,7 +1145,6 @@ document.getElementById('clear-all-btn').addEventListener('click', () => {
     tableContainer.innerHTML = '';
 
     renderPartsContent();
-
 
     window.scrollTo({ top: 0, behavior: 'smooth' });
 });
